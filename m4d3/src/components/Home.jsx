@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import NavBar from "./NavBar";
 
+import api from "./api";
 import horror from "../assets/horror.json";
 
 import {
@@ -16,10 +17,27 @@ import ModalReview from "./ModalReview";
 
 function Home() {
   const [modalShow, setModalShow] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [img, setImage] = useState(null);
+  const [title, setTitle] = useState(null);
+  const [price, setPrice] = useState(null);
   const [current, setCurrent] = useState([...horror]);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
-
+  const [review, setReviews] = useState([]);
+  const fetchCommentsHandler = async (id) => {
+    try {
+      const response = await fetch(api.url + `${id}/`, {
+        headers: {
+          Authorization: api.authKey,
+        },
+      });
+      const reviews = await response.json();
+      setReviews(reviews);
+    } catch (error) {
+      console.error(`API ERROR : ${error.message}`);
+    }
+  };
   const handleChange = (event) => {
     setSearchTerm(event.target.value);
   };
@@ -93,7 +111,10 @@ function Home() {
                       <Card.Text>{book.price}</Card.Text>
 
                       <Button
-                        onClick={() => setModalShow(true)}
+                        onClick={() => {
+                          setSelected(book.asin);
+                          setModalShow(true);
+                        }}
                         variant="danger"
                       >
                         Review Me
@@ -136,21 +157,32 @@ function Home() {
                       <Card.Text>{book.price}</Card.Text>
 
                       <Button
-                        onClick={() => setModalShow(true)}
+                        onClick={() => {
+                          fetchCommentsHandler(book.asin);
+                          setPrice(book.price);
+                          setTitle(book.title);
+                          setImage(book.img);
+                          setSelected(book.asin);
+                          setModalShow(true);
+                        }}
                         variant="danger"
                       >
                         Review Me
                       </Button>
                     </Card.Body>
                   </Card>
-                  <ModalReview
-                    asin={book.asin}
-                    show={modalShow}
-                    onHide={() => setModalShow(false)}
-                  />
                 </Col>
               ))}
         </Row>
+
+        <ModalReview
+          onHide={() => setModalShow(false)}
+          asin={selected}
+          price={price}
+          img={img}
+          title={title}
+          show={modalShow}
+        />
       </Container>
     </>
   );
